@@ -11,8 +11,13 @@ body {
   color: #2d2d2d;
   min-height: 100vh;
   padding: 20px;
+  font-size: 18px; /* NEU: Macht den normalen Text größer */
 }
 
+/* NEU: Macht die Schrift in Textfeldern und auf Knöpfen größer */
+input, textarea, select, button {
+  font-size: 16px; 
+}
 .container {
   max-width: 1200px;
   margin: auto;
