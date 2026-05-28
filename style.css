@@ -188,7 +188,8 @@ dialog::backdrop {
 }
 
 .form-group input,
-.form-group textarea {
+.form-group textarea,
+.form-group select {
   width: 100%;
   padding: 14px;
   border-radius: 14px;
