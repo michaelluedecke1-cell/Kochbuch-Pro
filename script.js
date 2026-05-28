@@ -306,8 +306,10 @@ async function importWithAI() {
   const prompt = `
     Du bist ein hilfreicher Ernährungs- und Koch-Assistent. Extrahiere aus dem folgenden Text die Zutaten und die Zubereitungsschritte. 
     Falls im Text Kalorien stehen, übernimm diese. Falls nicht, schätze die realistischen Kalorien (kcal) für EINE Portion dieses Gerichts (nur als reine Zahl).
-    Antworte AUSSCHLIESSLICH in diesem exakten JSON-Format und schreibe absolut keinen Text davor oder danach:
-    {"zutaten": "zutat 1\\nzutat 2", "zubereitung": "schritt 1\\nschritt 2", "kalorien": 450}
+    Antworte AUSSCHLIESSLICH als valides JSON-Objekt.
+    WICHTIG: Verwende KEINE echten Zeilenumbrüche innerhalb der JSON-Texte! Nutze für neue Zeilen zwingend die Zeichenfolge \\n .
+    Format-Beispiel:
+    {"zutaten": "Zutat 1\\nZutat 2", "zubereitung": "Schritt 1\\nSchritt 2", "kalorien": 450}
     
     Hier ist der Text:
     ${rawText}
