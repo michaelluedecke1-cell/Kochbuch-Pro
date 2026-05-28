@@ -1,6 +1,7 @@
 let recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
 let editId = null;
 let activeCategory = 'Alle';
+let wakeLock = null; // NEU: Speichert den Status für das Display
 
 const grid = document.getElementById('recipeGrid');
 const emptyState = document.getElementById('emptyState');
@@ -79,7 +80,6 @@ function renderRecipes() {
   });
 }
 
-// --- Live-Umrechnung von Zutaten und Kalorien ---
 function updatePortions(id) {
   const recipe = recipes.find(r => r.id === id);
   if (!recipe) return;
@@ -114,14 +114,11 @@ function formatIngredients(text, basePortions, currentPortions) {
 
   return updatedText.replace(/\n/g, '<br>');
 }
-// ------------------------------------------
 
-// --- NEU: Rezept teilen Funktion (Web Share API) ---
 async function shareRecipe(id) {
   const recipe = recipes.find(r => r.id === id);
   if (!recipe) return;
 
-  // Wir bauen einen schönen Text für WhatsApp & Co. zusammen
   let shareText = `🍳 *${recipe.title}*\n`;
   shareText += `🍽️ Für ${recipe.portions || 1} Portion(en)\n`;
   
@@ -132,28 +129,58 @@ async function shareRecipe(id) {
   shareText += `\n🛒 *Zutaten:*\n${recipe.ingredients}\n`;
   shareText += `\n👨‍🍳 *Zubereitung:*\n${recipe.steps}\n`;
 
-  // Prüfen, ob das Gerät/der Browser die native Teilen-Funktion unterstützt
   if (navigator.share) {
     try {
       await navigator.share({
         title: recipe.title,
         text: shareText
       });
-      console.log('Erfolgreich geteilt!');
     } catch (err) {
-      console.log('Teilen wurde abgebrochen oder ist fehlgeschlagen.', err);
+      console.log('Teilen abgebrochen', err);
     }
   } else {
-    // Fallback: Wenn man z.B. an einem alten PC sitzt, kopieren wir den Text in die Zwischenablage
     try {
       await navigator.clipboard.writeText(shareText);
-      alert('📋 Rezept wurde in die Zwischenablage kopiert! (Dein aktueller Browser unterstützt das native "Teilen" nicht).');
+      alert('📋 Rezept in die Zwischenablage kopiert!');
     } catch (err) {
-      alert('Kopieren fehlgeschlagen. Bitte markiere den Text manuell.');
+      alert('Kopieren fehlgeschlagen.');
     }
   }
 }
-// ------------------------------------------
+
+// --- NEU: Display dauerhaft anlassen (Wake Lock) ---
+async function toggleWakeLock() {
+  const btn = document.getElementById('wakeLockBtn');
+  
+  if ('wakeLock' in navigator) {
+    if (!wakeLock) {
+      // Wenn das Display nicht geschützt ist, schalten wir den Schutz ein
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        btn.style.background = '#eab308'; // Gelb leuchten
+        btn.style.borderColor = '#ca8a04';
+        btn.innerText = '💡 Bleibt an!';
+        
+        // Falls das Handy in die Hosentasche gesteckt wird, wird der Lock automatisch gelöst
+        wakeLock.addEventListener('release', () => {
+          wakeLock = null;
+          btn.style.background = '#64748b'; // Wieder Grau
+          btn.style.borderColor = '#64748b';
+          btn.innerText = '💡 Display an';
+        });
+      } catch (err) {
+        alert('Fehler: Konnte das Display nicht wachhalten.');
+      }
+    } else {
+      // Wenn der Schutz aktiv ist und der Nutzer nochmal klickt, schalten wir ihn aus
+      await wakeLock.release();
+      wakeLock = null;
+    }
+  } else {
+    alert('Dein Browser unterstützt diese Funktion leider nicht.');
+  }
+}
+// ----------------------------------------------------
 
 function openRecipeModal() {
   editId = null;
@@ -258,7 +285,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// --- KI mit Kalorien-Erkennung ---
 async function importWithAI() {
   const rawText = document.getElementById('aiInput').value.trim();
   const aiBtn = document.querySelector('button[onclick="importWithAI()"]');
