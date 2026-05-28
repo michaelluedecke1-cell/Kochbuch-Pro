@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#16a34a" />
+ <title>Mein Kochbuch</title>
+    <link rel="icon" type="image/png" href="icon.png" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <div style="display:flex; justify-content:flex-end; gap: 10px; margin-bottom:10px;">
+      <a href="kategorien.html" class="btn-link secondary btn-icon" title="Kategorien">📂</a>
+      <a href="settings.html" class="btn-link secondary btn-icon" title="Verwaltung">⚙️</a>
+    </div>
+
+    <section class="hero">
+      <h1>🍳 Rezepte</h1>
+    </section>
+
+    <div class="toolbar">
+      <input class="search" id="searchInput" type="text" placeholder="Rezepte suchen..." />
+      <button onclick="openRecipeModal()">➕ Neues Rezept</button>
+    </div>
+
+    <div id="recipeGrid" class="grid"></div>
+    
+    <div id="emptyState" class="empty">
+      <h2>Noch keine Rezepte gespeichert 🍝</h2>
+    </div>
+  </div>
+
+  <dialog id="recipeModal">
+    <h2 id="modalTitle">Neues Rezept</h2>
+
+    <div class="form-group">
+      <label>Titel</label>
+      <input id="titleInput" type="text" />
+    </div>
+
+    <div class="form-group" style="background: #e0f2fe; padding: 15px; border-radius: 14px; border: 1px dashed #38bdf8; margin-bottom: 20px;">
+      <label style="color: #0369a1;">✨ KI-Import (Text reinkopieren)</label>
+      <textarea id="aiInput" placeholder="Kopiere hier den chaotischen Rezept-Text rein..." style="background: white; border-color: #bae6fd; min-height: 80px;"></textarea>
+      <button type="button" onclick="importWithAI()" style="background: #0284c7; width: 100%; margin-top: 10px;">🤖 Text mit KI sortieren</button>
+    </div>
+   <div class="form-group">
+      <label>Kategorie</label>
+      <select id="categoryInput">
+        <option value="Hauptspeise">🍽️ Hauptspeise</option>
+        <option value="Superfood">🥑 Superfood</option>
+        <option value="Fleisch">🥩 Fleisch</option>
+        <option value="Dips und Soßen">🥣 Dips und Soßen</option>
+        <option value="Sonstiges">🍴 Sonstiges</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Für wie viele Portionen ist das Rezept?</label>
+      <input id="portionsInput" type="number" min="1" value="2" />
+    </div>
+<div class="form-group">
+      <label>Kalorien pro Portion (kcal)</label>
+      <input id="caloriesInput" type="number" placeholder="z.B. 450" />
+    </div>
+    <div class="form-group">
+      <label>Zutaten</label>
+      <textarea id="ingredientsInput"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Zubereitung</label>
+      <textarea id="stepsInput"></textarea>
+    </div>
+
+    <div class="actions">
+      <button onclick="saveRecipe()">💾 Speichern</button>
+      <button class="secondary" onclick="closeModal()">Abbrechen</button>
+    </div>
+  </dialog>
+
+  <script src="script.js"></script>
+</body>
+</html>

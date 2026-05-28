@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#78716c" />
+  <title>Verwaltung - Mein Kochbuch</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <section class="hero secondary-hero">
+      <h1>⚙️ Verwaltung & Extras</h1>
+    </section>
+
+    <div class="card">
+      <div class="toolbar">
+        <button onclick="backupRecipes()">💾 Backup erstellen</button>
+        <button onclick="restoreRecipes()">📂 Backup wiederherstellen</button>
+        <button onclick="exportPDF()">📄 Kochbuch als PDF</button>
+        <a href="index.html" class="btn-link secondary">⬅ Zurück</a>
+      </div>
+      <p style="margin-top:20px; color:#666; line-height:1.6;"></p>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <h2 style="color: #166534; margin-bottom: 15px;">🤖 KI-Integration</h2>
+      <p style="margin-bottom: 15px; color: #666; line-height: 1.5;">
+        Hinterlege hier deinen kostenlosen Google Gemini API-Schlüssel. Er wird <strong>nicht</strong> im Code gespeichert, sondern bleibt sicher und lokal auf deinem Gerät.
+      </p>
+      
+      <div class="form-group">
+        <label>Dein API-Schlüssel</label>
+        <input type="password" id="apiKeyInput" placeholder="AIzaSy..." />
+      </div>
+      
+      <button onclick="saveApiKey()">🔑 Schlüssel speichern</button>
+    </div>
+    </div>
+
+  <input type="file" id="restoreInput" accept="application/json" style="display:none" />
+
+  <script src="settings.js"></script>
+</body>
+</html>

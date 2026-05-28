@@ -1,0 +1,317 @@
+let recipes = JSON.parse(localStorage.getItem('recipes') || '[]');
+let editId = null;
+let activeCategory = 'Alle';
+
+const grid = document.getElementById('recipeGrid');
+const emptyState = document.getElementById('emptyState');
+const searchInput = document.getElementById('searchInput');
+
+function saveToStorage() {
+  localStorage.setItem('recipes', JSON.stringify(recipes));
+}
+
+function setCategoryFilter(category) {
+  activeCategory = category;
+  renderRecipes();
+}
+
+function renderRecipes() {
+  const search = searchInput.value.toLowerCase();
+
+  const filtered = recipes.filter(r => {
+    const matchesSearch = r.title.toLowerCase().includes(search) || r.ingredients.toLowerCase().includes(search);
+    const matchesCategory = activeCategory === 'Alle' || r.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  grid.innerHTML = '';
+
+  if (filtered.length === 0) {
+    emptyState.style.display = 'block';
+  } else {
+    emptyState.style.display = 'none';
+  }
+
+  filtered.forEach(recipe => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    
+    const displayCategory = recipe.category || 'Sonstiges';
+    const basePortions = recipe.portions || 1;
+    
+    let caloriesHtml = '';
+    if (recipe.calories) {
+      caloriesHtml = `
+        <div style="margin-top: 10px; color: #ea580c; font-weight: bold; background: #fff7ed; padding: 8px 12px; border-radius: 6px; display: inline-block; border: 1px solid #ffedd5;">
+          🔥 <span id="calTotal-${recipe.id}">${Math.round(recipe.calories * basePortions)}</span> kcal Gesamt 
+          <span style="font-size: 0.85em; color: #f97316; font-weight: normal;">(ca. ${recipe.calories} kcal/Portion)</span>
+        </div>
+      `;
+    }
+
+    card.innerHTML = `
+      <span class="tag">${displayCategory}</span>
+      <h3>${recipe.title}</h3>
+      <div class="meta">🍽️ Rezept gespeichert am ${recipe.date}</div>
+      
+      ${caloriesHtml}
+
+      <div style="margin: 15px 0; padding: 10px; background: #f0fdf4; border-radius: 8px; display: flex; align-items: center; gap: 10px; border: 1px solid #bbf7d0;">
+        <label style="font-weight: bold; color: #166534; margin: 0;">Portionen:</label>
+        <input type="number" min="1" value="${basePortions}" id="portion-${recipe.id}" oninput="updatePortions('${recipe.id}')" style="width: 70px; margin: 0; padding: 5px; text-align: center;">
+      </div>
+
+      <strong>Zutaten:</strong>
+      <p id="ingredients-${recipe.id}">${formatIngredients(recipe.ingredients, basePortions, basePortions)}</p>
+
+      <br>
+      <strong>Zubereitung:</strong>
+      <p>${recipe.steps.replace(/\n/g, '<br>')}</p>
+
+      <div class="actions">
+        <button onclick="shareRecipe('${recipe.id}')" title="Teilen" style="background: #0284c7; border-color: #0284c7;">📤 Teilen</button>
+        <button onclick="editRecipe('${recipe.id}')" title="Bearbeiten">✏️</button>
+        <button class="danger" onclick="deleteRecipe('${recipe.id}')" title="Löschen">🗑️</button>
+      </div>
+    `;
+
+    grid.appendChild(card);
+  });
+}
+
+// --- Live-Umrechnung von Zutaten und Kalorien ---
+function updatePortions(id) {
+  const recipe = recipes.find(r => r.id === id);
+  if (!recipe) return;
+
+  const inputElement = document.getElementById(`portion-${id}`);
+  const newPortions = parseFloat(inputElement.value);
+  
+  if (isNaN(newPortions) || newPortions <= 0) return;
+
+  const basePortions = recipe.portions || 1;
+  
+  const ingredientsContainer = document.getElementById(`ingredients-${id}`);
+  ingredientsContainer.innerHTML = formatIngredients(recipe.ingredients, basePortions, newPortions);
+
+  if (recipe.calories) {
+    const totalCalEl = document.getElementById(`calTotal-${id}`);
+    if (totalCalEl) {
+      totalCalEl.innerText = Math.round(recipe.calories * newPortions);
+    }
+  }
+}
+
+function formatIngredients(text, basePortions, currentPortions) {
+  const ratio = currentPortions / basePortions;
+  
+  let updatedText = text.replace(/\b\d+([.,]\d+)?/g, (match) => {
+    const num = parseFloat(match.replace(',', '.'));
+    let newNum = num * ratio;
+    newNum = Math.round(newNum * 100) / 100;
+    return newNum.toString().replace('.', ',');
+  });
+
+  return updatedText.replace(/\n/g, '<br>');
+}
+// ------------------------------------------
+
+// --- NEU: Rezept teilen Funktion (Web Share API) ---
+async function shareRecipe(id) {
+  const recipe = recipes.find(r => r.id === id);
+  if (!recipe) return;
+
+  // Wir bauen einen schönen Text für WhatsApp & Co. zusammen
+  let shareText = `🍳 *${recipe.title}*\n`;
+  shareText += `🍽️ Für ${recipe.portions || 1} Portion(en)\n`;
+  
+  if (recipe.calories) {
+    shareText += `🔥 Ca. ${recipe.calories} kcal pro Portion\n`;
+  }
+  
+  shareText += `\n🛒 *Zutaten:*\n${recipe.ingredients}\n`;
+  shareText += `\n👨‍🍳 *Zubereitung:*\n${recipe.steps}\n`;
+
+  // Prüfen, ob das Gerät/der Browser die native Teilen-Funktion unterstützt
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: recipe.title,
+        text: shareText
+      });
+      console.log('Erfolgreich geteilt!');
+    } catch (err) {
+      console.log('Teilen wurde abgebrochen oder ist fehlgeschlagen.', err);
+    }
+  } else {
+    // Fallback: Wenn man z.B. an einem alten PC sitzt, kopieren wir den Text in die Zwischenablage
+    try {
+      await navigator.clipboard.writeText(shareText);
+      alert('📋 Rezept wurde in die Zwischenablage kopiert! (Dein aktueller Browser unterstützt das native "Teilen" nicht).');
+    } catch (err) {
+      alert('Kopieren fehlgeschlagen. Bitte markiere den Text manuell.');
+    }
+  }
+}
+// ------------------------------------------
+
+function openRecipeModal() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = 'Neues Rezept';
+  document.getElementById('titleInput').value = '';
+  document.getElementById('aiInput').value = ''; 
+  document.getElementById('categoryInput').value = 'Hauptspeise'; 
+  document.getElementById('portionsInput').value = '2'; 
+  document.getElementById('caloriesInput').value = ''; 
+  document.getElementById('ingredientsInput').value = '';
+  document.getElementById('stepsInput').value = '';
+  document.getElementById('recipeModal').showModal();
+}
+
+function closeModal() {
+  document.getElementById('recipeModal').close();
+}
+
+function saveRecipe() {
+  const title = document.getElementById('titleInput').value.trim();
+  const category = document.getElementById('categoryInput').value;
+  const portions = parseInt(document.getElementById('portionsInput').value) || 1; 
+  const calories = parseInt(document.getElementById('caloriesInput').value) || ''; 
+  const ingredients = document.getElementById('ingredientsInput').value.trim();
+  const steps = document.getElementById('stepsInput').value.trim();
+
+  if (!title || !ingredients || !steps) {
+    alert('Bitte alle Pflichtfelder (Titel, Zutaten, Zubereitung) ausfüllen.');
+    return;
+  }
+
+  if (editId) {
+    recipes = recipes.map(r => r.id === editId ? {
+      ...r,
+      title,
+      category,
+      portions,
+      calories, 
+      ingredients,
+      steps
+    } : r);
+  } else {
+    recipes.unshift({
+      id: crypto.randomUUID(),
+      title,
+      category,
+      portions,
+      calories, 
+      ingredients,
+      steps,
+      date: new Date().toLocaleDateString('de-DE')
+    });
+  }
+
+  saveToStorage();
+  renderRecipes();
+  closeModal();
+}
+
+function editRecipe(id) {
+  const recipe = recipes.find(r => r.id === id);
+  if (!recipe) return;
+
+  editId = id;
+  document.getElementById('modalTitle').textContent = 'Rezept bearbeiten';
+  document.getElementById('titleInput').value = recipe.title;
+  document.getElementById('aiInput').value = '';
+  document.getElementById('categoryInput').value = recipe.category || 'Sonstiges';
+  document.getElementById('portionsInput').value = recipe.portions || 1;
+  document.getElementById('caloriesInput').value = recipe.calories || ''; 
+  document.getElementById('ingredientsInput').value = recipe.ingredients;
+  document.getElementById('stepsInput').value = recipe.steps;
+
+  document.getElementById('recipeModal').showModal();
+}
+
+function deleteRecipe(id) {
+  if (!confirm('Rezept wirklich löschen?')) return;
+
+  recipes = recipes.filter(r => r.id !== id);
+  saveToStorage();
+  renderRecipes();
+}
+
+if (searchInput) {
+  searchInput.addEventListener('input', renderRecipes);
+}
+
+const urlParams = new URLSearchParams(window.location.search);
+const categoryFromUrl = urlParams.get('cat');
+
+if (categoryFromUrl) {
+  setCategoryFilter(categoryFromUrl);
+} else {
+  renderRecipes();
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .catch(err => console.error('Service Worker Fehler', err));
+  });
+}
+
+// --- KI mit Kalorien-Erkennung ---
+async function importWithAI() {
+  const rawText = document.getElementById('aiInput').value.trim();
+  const aiBtn = document.querySelector('button[onclick="importWithAI()"]');
+  
+  if (!rawText) {
+    alert("Bitte kopiere zuerst einen Rezept-Text in das hellblaue KI-Feld!");
+    return;
+  }
+
+  const apiKey = localStorage.getItem('geminiApiKey');
+  if (!apiKey) {
+    alert("⚠️ Es wurde noch kein KI-Schlüssel hinterlegt! Bitte trage ihn zuerst in der Verwaltung (⚙️) ein.");
+    return;
+  }
+
+  aiBtn.innerText = "⏳ KI denkt nach...";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+  const prompt = `
+    Du bist ein hilfreicher Ernährungs- und Koch-Assistent. Extrahiere aus dem folgenden Text die Zutaten und die Zubereitungsschritte. 
+    Falls im Text Kalorien stehen, übernimm diese. Falls nicht, schätze die realistischen Kalorien (kcal) für EINE Portion dieses Gerichts (nur als reine Zahl).
+    Antworte AUSSCHLIESSLICH in diesem exakten JSON-Format und schreibe absolut keinen Text davor oder danach:
+    {"zutaten": "zutat 1\\nzutat 2", "zubereitung": "schritt 1\\nschritt 2", "kalorien": 450}
+    
+    Hier ist der Text:
+    ${rawText}
+  `;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }]
+      })
+    });
+
+    const data = await response.json();
+    const textResponse = data.candidates[0].content.parts[0].text;
+    
+    const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+    const result = JSON.parse(cleanJson);
+
+    document.getElementById('ingredientsInput').value = result.zutaten || '';
+    document.getElementById('stepsInput').value = result.zubereitung || '';
+    document.getElementById('caloriesInput').value = result.kalorien || '';
+
+    aiBtn.innerText = "✅ Erfolgreich sortiert!";
+    setTimeout(() => { aiBtn.innerText = "🤖 Text mit KI sortieren"; }, 2500);
+
+  } catch (error) {
+    console.error("KI Fehler:", error);
+    alert("Fehler bei der Verbindung zur KI. Ist dein API-Schlüssel aus den Einstellungen korrekt?");
+    aiBtn.innerText = "🤖 Text mit KI sortieren";
+  }
+}
