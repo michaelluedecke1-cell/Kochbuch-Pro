@@ -294,38 +294,51 @@ async function importWithAI() {
     return;
   }
 
-  const apiKey = localStorage.getItem('geminiApiKey');
+  const apiKey = localStorage.getItem('groqApiKey');
   if (!apiKey) {
-    alert("⚠️ Es wurde noch kein KI-Schlüssel hinterlegt! Bitte trage ihn zuerst in der Verwaltung (⚙️) ein.");
+    alert("⚠️ Es wurde noch kein Groq-Schlüssel hinterlegt! Bitte trage ihn zuerst in der Verwaltung (⚙️) ein.");
     return;
   }
 
-  aiBtn.innerText = "⏳ KI denkt nach...";
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  aiBtn.innerText = "⏳ Groq denkt nach...";
+  const url = "https://api.groq.com/openai/v1/chat/completions";
 
-  const prompt = `
+  const systemPrompt = `
     Du bist ein hilfreicher Ernährungs- und Koch-Assistent. Extrahiere aus dem folgenden Text die Zutaten und die Zubereitungsschritte. 
     Falls im Text Kalorien stehen, übernimm diese. Falls nicht, schätze die realistischen Kalorien (kcal) für EINE Portion dieses Gerichts (nur als reine Zahl).
     Antworte AUSSCHLIESSLICH als valides JSON-Objekt.
     WICHTIG: Verwende KEINE echten Zeilenumbrüche innerhalb der JSON-Texte! Nutze für neue Zeilen zwingend die Zeichenfolge \\n .
     Format-Beispiel:
     {"zutaten": "Zutat 1\\nZutat 2", "zubereitung": "Schritt 1\\nSchritt 2", "kalorien": 450}
-    
-    Hier ist der Text:
-    ${rawText}
   `;
 
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }]
+        model: "llama3-8b-8192", // Schnelles Modell von Groq
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: "Hier ist der Text:\n" + rawText }
+        ],
+        response_format: { type: "json_object" }, // Zwingt Groq dazu, sauberes JSON zu liefern
+        temperature: 0.2 // Macht die Antwort sachlicher und stabiler
       })
     });
 
     const data = await response.json();
-    const textResponse = data.candidates[0].content.parts[0].text;
+    
+    // Fehler abfangen, z.B. wenn der API Schlüssel falsch ist
+    if (data.error) {
+      throw new Error(data.error.message);
+    }
+
+    // Groq verpackt die Antwort etwas anders als Gemini
+    const textResponse = data.choices[0].message.content;
     
     const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
     const result = JSON.parse(cleanJson);
@@ -339,7 +352,7 @@ async function importWithAI() {
 
   } catch (error) {
     console.error("KI Fehler:", error);
-    alert("Fehler bei der Verbindung zur KI. Ist dein API-Schlüssel aus den Einstellungen korrekt?");
+    alert("Fehler bei der Verbindung zu Groq. Ist dein API-Schlüssel aus den Einstellungen korrekt?");
     aiBtn.innerText = "🤖 Text mit KI sortieren";
   }
 }
