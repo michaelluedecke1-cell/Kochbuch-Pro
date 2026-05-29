@@ -320,7 +320,7 @@ async function importWithAI() {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "llama3-8b-8192", // Schnelles Modell von Groq
+        model: "llama-3.3-70b-versatile", // Schnelles Modell von Groq
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: "Hier ist der Text:\n" + rawText }
