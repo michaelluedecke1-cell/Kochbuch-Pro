@@ -87,11 +87,13 @@ function exportPDF() {
     printWindow.print();
   }, 250);
 }
-// --- NEU: KI-API-Schlüssel Verwaltung ---
+
+
+// --- NEU: KI-API-Schlüssel Verwaltung (Groq) ---
 
 // Lädt den Schlüssel, falls schon einer gespeichert wurde, sobald die Seite lädt
 document.addEventListener('DOMContentLoaded', () => {
-  const savedKey = localStorage.getItem('geminiApiKey');
+  const savedKey = localStorage.getItem('groqApiKey');
   if (savedKey) {
     document.getElementById('apiKeyInput').value = savedKey;
   }
@@ -102,11 +104,11 @@ function saveApiKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
   
   if (key) {
-    localStorage.setItem('geminiApiKey', key);
-    alert('✅ API-Schlüssel wurde sicher auf deinem Gerät gespeichert!');
+    localStorage.setItem('groqApiKey', key);
+    alert('✅ Groq API-Schlüssel wurde sicher auf deinem Gerät gespeichert!');
   } else {
     // Wenn das Feld leer ist und man auf Speichern klickt, wird der alte Schlüssel gelöscht
-    localStorage.removeItem('geminiApiKey');
+    localStorage.removeItem('groqApiKey');
     alert('🗑️ API-Schlüssel wurde entfernt.');
   }
 }
