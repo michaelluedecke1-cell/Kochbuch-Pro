@@ -282,6 +282,9 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
       .catch(err => console.error('Service Worker Fehler', err));
+      
+    // NEU: Sofort den Speicherschutz anfordern
+    requestPersistentStorage();
   });
 }
 
@@ -354,5 +357,27 @@ async function importWithAI() {
     console.error("KI Fehler:", error);
     alert("Fehler bei der Verbindung zu Groq. Ist dein API-Schlüssel aus den Einstellungen korrekt?");
     aiBtn.innerText = "🤖 Text mit KI sortieren";
+  }
+}
+// --- NEU: Persistent Storage API (Schutz vor Löschung) ---
+async function requestPersistentStorage() {
+  if (navigator.storage && navigator.storage.persist) {
+    try {
+      const isPersisted = await navigator.storage.persisted();
+      if (!isPersisted) {
+        const granted = await navigator.storage.persist();
+        if (granted) {
+          console.log("✅ Speicher ist nun persistent! Die Rezepte sind sicher.");
+        } else {
+          console.log("⚠️ Persistenter Speicher wurde abgelehnt.");
+        }
+      } else {
+        console.log("✅ Speicher war bereits persistent geschützt.");
+      }
+    } catch (err) {
+      console.error("Fehler beim Anfordern des persistenten Speichers:", err);
+    }
+  } else {
+    console.log("ℹ️ Persistent Storage API wird von diesem Browser nicht unterstützt.");
   }
 }
