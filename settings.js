@@ -112,3 +112,24 @@ function saveApiKey() {
     alert('🗑️ API-Schlüssel wurde entfernt.');
   }
 }
+// --- NEU: Speicher-Status in den Einstellungen prüfen ---
+async function checkStorageStatus() {
+  const statusEl = document.getElementById('storageStatus');
+  if (!statusEl) return;
+
+  if (navigator.storage && navigator.storage.persisted) {
+    const isPersisted = await navigator.storage.persisted();
+    if (isPersisted) {
+      statusEl.innerHTML = "🛡️ <strong>Sicher:</strong> Deine Rezepte sind dauerhaft auf diesem Gerät geschützt.";
+      statusEl.style.color = "#166534"; // Dunkelgrün
+    } else {
+      statusEl.innerHTML = "⚠️ <strong>Achtung:</strong> Der Browser könnte Daten bei Speichermangel löschen. Tipp: Installiere die App auf dem Startbildschirm!";
+      statusEl.style.color = "#b45309"; // Orange
+    }
+  } else {
+    statusEl.innerHTML = "ℹ️ Speicher-Schutz wird von diesem Gerät nicht unterstützt.";
+  }
+}
+
+// Sofort prüfen, wenn die Einstellungs-Seite lädt
+document.addEventListener('DOMContentLoaded', checkStorageStatus);
