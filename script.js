@@ -323,7 +323,7 @@ async function importWithAI() {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "qwen/qwen3.6-27b", // Schnelles Modell von Groq
+        model: "qwen3.6-27b", // Schnelles Modell von Groq
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: "Hier ist der Text:\n" + rawText }
